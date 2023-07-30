@@ -14,22 +14,44 @@
 
 #include <ESP32SvelteKit.h>
 #include <AirStateService.h>
-#include <PowerService.h>
+#include <PowerService.h> 
 
 
 #define SERIAL_BAUD_RATE 115200
 
 bool ledState = 0;
-const int hazepin = 10;
+const int haze = 10;
 const int airpin = 11;
-const int smokepin = 12;
+const int coilpin = 12;
 float voltage;
 float coilpw;
+bool coilState = false;
+bool airState = false;
+float coilpowerset = 0;
+float airpowerset = 0;
+bool lowpower = true;
+float burntimeset = 0; 
+float intervalset = 0;
+bool timerstate = false;
+float maxburntimeset = 6000;
+
 
 unsigned long startMillis;  //some global variables available anywhere in the program
 unsigned long currentMillis;
+unsigned long coilprevMillis;
 const unsigned long period = 1500;  //the value is a number of milliseconds
 const byte ledPin = 13;    //using the built in LED
+const int coiltype = 0;
+
+// setting PWM properties
+const int freq = 12000;
+const int airchannel = 0;
+const int coilchannel = 1;
+const int resolution = 8;
+
+const int maxAmpere = 3; // Maximale Amperewert, an dem die Reduzierung der PWM startet
+const int minPwm = 30; // Minimum PWM Ausgabe
+const int maxPwm = 70; // Maximum PWM Ausgabe
 
 
 AsyncWebServer server(80);
@@ -37,59 +59,113 @@ ESP32SvelteKit esp32sveltekit(&server);
 AirStateService airStateService = AirStateService(&server,esp32sveltekit.getSecurityManager());
 PowerStateService powerStateService = PowerStateService(&server,esp32sveltekit.getSecurityManager());
 
-float getAnalogAveragePercent(int pinNumber, int samples)
+float getAnalogAverage(int pinNumber, int samples)
 {
-    float sum = 0;
-    float average = 0;
-    float percentage = 0;
-    for (int i = 0; i < samples; i++)
-    {
-        // TODO: Possibly use fancier filters?
-        sum += analogRead(pinNumber);
-    }
-    average = sum / samples;
-    // TODO: Might want to add a deadband
-    percentage = 100.0 * average / 4096.0; // 12 bit resolution
-    return percentage;
+  float sum = 0;
+  float average = 0;
+  for (int i = 0; i < samples; i++)
+  {
+    // TODO: Possibly use fancier filters?
+    sum += analogRead(pinNumber);
+  }
+  average = sum / samples;
+  return average;
 }
 
 void battery(){
-  voltage = analogRead(1);
+  voltage = getAnalogAverage(1, 20);
+  Serial.print(" ");
+  Serial.print(voltage);
+  //voltage = analogRead(1);
   voltage = voltage * 10/4096;
+  if(voltage < 6.5){
+    lowpower = true;
+    Serial.print(" ");
+    Serial.print(voltage);
+    Serial.println("Low Power");
+  } else {
+    lowpower = false;
+    Serial.print(" ");
+    Serial.print(voltage);
+    Serial.println("High Power");
+  }
+  
   //Serial.print("Voltage= ");
   //Serial.println(voltage);
 }
 
-void coilpower(){
-  unsigned int x=0;
-  float AcsValue=0.0,Samples=0.0,AvgAcs=0.0,AcsValueF=0.0;
+void coilpower() {
+  static unsigned int sampleCount = 0; // count the number of samples
+  static float accumulatedSamples = 0.0; // accumulate the sample values
 
-  for (int x = 0; x < 150; x++){ //Get 150 samples
-  AcsValue = analogRead(18);     //Read current sensor values   
-  Samples = Samples + AcsValue;  //Add samples together
-  delay (3); // let ADC settle before next sample 3ms
+  const unsigned long SAMPLE_INTERVAL_MS = 3;
+  const unsigned int MAX_SAMPLES = 150;
+  const unsigned int SENSOR_PIN = 18;
+  const float OFFSET_VOLTAGE = 1.65;
+  const float ADC_RESOLUTION = 4096.0;
+  const float ARDUINO_VOLTAGE = 3.3;
+  const float VOLTAGE_PER_AMPERE = 0.185;
+
+  unsigned long currentMillis = millis(); // get the current time
+  static unsigned long prevMillis = 0;
+
+  if (currentMillis - prevMillis >= SAMPLE_INTERVAL_MS) {
+    prevMillis = currentMillis; // update the previous time
+    if(sampleCount < MAX_SAMPLES) { // get 150 samples
+      float sensorValue = analogRead(SENSOR_PIN); // read current sensor values
+      accumulatedSamples += sensorValue; // add samples together
+      sampleCount++; // increment the sample count
+    }
   }
-  AvgAcs=Samples/150.0;//Taking Average of Samples
 
-//((AvgAcs * (5.0 / 1024.0)) is converitng the read voltage in 0-5 volts
-//2.5 is offset(I assumed that arduino is working on 5v so the viout at no current comes
-//out to be 2.5 which is out offset. If your arduino is working on different voltage than 
-//you must change the offset according to the input voltage)
-//0.185v(185mV) is rise in output voltage when 1A current flows at input
-coilpw = (1.65 - (AvgAcs * (3.3 / 4096.0)) )/0.185;
-//Serial.println(AcsValueF);//Print the read current on Serial monitor 
+  if (sampleCount == MAX_SAMPLES) { // if we've got all our samples
+    float averageSample = accumulatedSamples / MAX_SAMPLES; // calculate the average
+
+    // calculate the power of the coil
+    coilpw = (OFFSET_VOLTAGE - (averageSample * (ARDUINO_VOLTAGE / ADC_RESOLUTION))) / VOLTAGE_PER_AMPERE;
+
+    // reset the sample count and the accumulated samples for the next set
+    sampleCount = 0;
+    accumulatedSamples = 0.0;
+  }
+}
+
+void coilburn(){
+  if (coilState == true){
+    int desiredPwm = map(coilpowerset, 0, 100, minPwm, maxPwm); // Mappe den gewünschten Prozentwert auf einen PWM-Wert
+    ledcWrite(coilchannel, desiredPwm);
+    } else {
+    ledcWrite(coilchannel, 0);   
+  }
+}
+
+void airpower(){
+    if(airState == true){
+      int desirePwm = map(airpowerset, 0, 100, 200, 255);
+      ledcWrite(airchannel, desirePwm);
+    } else {
+      ledcWrite(airchannel, 0);
+    };
 }
 
 void setup()
 {
+    
+    pinMode(coilpin, OUTPUT);
+    pinMode(airpin, OUTPUT);
+    pinMode(1, INPUT);
     battery();
+    ledcSetup(coilchannel, freq, resolution);
+    ledcSetup(airchannel, freq, resolution);
+    ledcAttachPin(coilpin, coilchannel);  
+    ledcAttachPin(airpin, airchannel);
+
     coilpower();
+
     // start serial and filesystem
     Serial.begin(SERIAL_BAUD_RATE);
-
     // start the framework and demo project
     esp32sveltekit.begin();
-
     // load the initial light settings
     airStateService.begin();
     powerStateService.begin();
@@ -98,20 +174,66 @@ void setup()
     server.begin();
 }
 
-void loop()
-{
-    // run the framework's loop function
-    esp32sveltekit.loop();
-    currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)
-    if (currentMillis - startMillis >= period)  //test whether the period has elapsed
-    {
-      battery();
-      coilpower();
-      startMillis = currentMillis;  //IMPORTANT to save the start time of the current LED state.
-     powerStateService.update([&](PowerState& state) {
+
+void loop() {
+  // run the framework's loop function
+  esp32sveltekit.loop();
+  currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)
+  if (currentMillis - startMillis >= period)  //test whether the period has elapsed
+  {
+    battery();
+    startMillis = currentMillis;  //IMPORTANT to save the start time of the current LED state.
+    powerStateService.update([&](PowerState& state) {
       state.voltageState = voltage;
       state.coilpwState = coilpw;
-     return StateUpdateResult::CHANGED;
-      }, "Bat/Coil-Timer");
+      return StateUpdateResult::CHANGED;
+    }, "Bat/Coil-Timer");
+  }
+
+  if (timerstate == true) {
+    static unsigned long burnStartMillis = 0;
+    static unsigned long intervalStartMillis = 0;
+    static bool burnInProgress = false;
+    static bool intervalInProgress = false;
+    burntimeset = burntimeset * 1000;
+    intervalset = intervalset * 1000;
+    
+    if (burnInProgress == false && intervalInProgress == false) {
+      burnStartMillis = currentMillis;
+      burnInProgress = true;
+      airState = true;
+      coilState = true;
     }
+    
+    if (burnInProgress == true && currentMillis - burnStartMillis >= burntimeset) {
+      burnInProgress = false;
+      intervalStartMillis = currentMillis;
+      airState = false;
+      coilState = false;
+    }
+    
+    if (intervalInProgress == false && burnInProgress == false && currentMillis - intervalStartMillis >= intervalset) {
+      intervalInProgress = true;
+      burnStartMillis = currentMillis;
+      airState = true;
+      coilState = true;
+    }
+    
+    if (intervalInProgress == true && currentMillis - burnStartMillis >= burntimeset) {
+      intervalInProgress = false;
+      burnInProgress = false;
+      airState = false;
+      coilState = false;
+    }
+  }
+
+  if (lowpower == false) {
+    coilpower();
+    coilburn();
+    airpower();
+  } else {
+    ledcWrite(coilchannel, 0);
+  }
 }
+
+

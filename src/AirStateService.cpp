@@ -13,13 +13,21 @@
  **/
 
 #include <AirStateService.h>
+extern float voltage;
+extern float coilpw;
+extern bool coilState;
+extern bool airState; 
+extern bool timerstate;
+extern float airpowerset;
+extern float coilpowerset;
+extern float burntimeset;
+extern float intervalset;
 
-const int airpin = 11;
+const int burntime = 0;
+const int interval = 0;
+bool airOn = false;
 
-// setting PWM properties
-const int freq = 15000;
-const int airchannel = 0;
-const int resolution = 8;
+
 
 AirStateService::AirStateService(AsyncWebServer *server,
                                  SecurityManager *securityManager) : _httpEndpoint(AirState::read,
@@ -35,30 +43,31 @@ AirStateService::AirStateService(AsyncWebServer *server,
                                                                                    AIR_SETTINGS_SOCKET_PATH,
                                                                                    securityManager,AuthenticationPredicates::IS_AUTHENTICATED)
 {
-    // configure led to be output
-    pinMode(airpin, OUTPUT);
-    ledcSetup(airchannel, freq, resolution);
-    ledcAttachPin(airpin, airchannel);
-
     // configure settings service update handler to update LED state
     addUpdateHandler([&](const String &originId){ 
-      onConfigUpdated();
-      Serial.print("The light's state has been updated by: ");},
+      onConfigUpdated();},
                      false);
 }
 
 void AirStateService::begin()
 {
     _state.airOn = DEFAULT_LED_STATE;
-    _state.power = 0;
+    _state.coilOn = DEFAULT_LED_STATE;
+    _state.intervalOn = DEFAULT_LED_STATE;
+    _state.airpower = 0;
+    _state.coilpower = 0;
+    _state.burntime = 0;
+    _state.interval = 0;
     onConfigUpdated();
 }
 
 void AirStateService::onConfigUpdated()
 {
-    if(_state.airOn == true){
-      ledcWrite(airchannel, _state.power);
-    } else {
-      ledcWrite(airchannel, 0);
-    };
+    airState  = _state.airOn;
+    coilState = _state.coilOn;
+    coilpowerset = _state.coilpower;
+    airpowerset = _state.airpower;
+    burntimeset = _state.burntime;
+    intervalset = _state.interval;
+    timerstate = _state.intervalOn;
 }

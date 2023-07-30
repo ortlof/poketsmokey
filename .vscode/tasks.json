@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "dev",
+			"path": "interface",
+			"problemMatcher": [],
+			"label": "npm: dev - interface",
+			"detail": "vite dev",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}

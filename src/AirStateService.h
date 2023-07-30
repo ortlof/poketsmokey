@@ -28,18 +28,33 @@ class AirState
 {
 public:
     bool airOn;
-    uint8_t power = 0;
+    bool coilOn;
+    bool intervalOn;
+    uint8_t airpower = 0;
+    uint8_t coilpower = 0;
+    uint8_t interval = 0;
+    uint8_t burntime = 0;
 
     static void read(AirState& state, JsonObject& root)
     {
        root["air"] = state.airOn;
-       root["power"] = state.power;
+       root["airpower"] = state.airpower;
+       root["coil"] = state.coilOn;
+       root["coilpower"] = state.coilpower;
+       root["intervalstate"] = state.intervalOn;
+       root["interval"] = state.interval;
+       root["burntime"] = state.burntime;
     }
 
     static StateUpdateResult update(JsonObject &root, AirState &airState)
     {
     airState.airOn = root["air"] | false;
-    airState.power = root["power"] | 255;
+    airState.coilOn = root["coil"] | false;
+    airState.intervalOn = root["intervalstate"] | false;
+    airState.airpower = root["airpower"] | 0;
+    airState.coilpower = root["coilpower"] | 0;
+    airState.interval = root["interval"] | 0;
+    airState.burntime = root["burntime"] | 0;
     return StateUpdateResult::CHANGED;
     }
 

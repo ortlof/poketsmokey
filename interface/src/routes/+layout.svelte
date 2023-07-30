@@ -12,7 +12,7 @@
 	import Statusbar from './statusbar.svelte';
 	import Login from './login.svelte';
 
-	export let data: LayoutData;
+	//export let data: LayoutData;
 
 	//$: console.log($user);
 

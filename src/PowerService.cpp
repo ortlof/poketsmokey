@@ -48,24 +48,3 @@ void PowerStateService::onConfigUpdated()
     _state.voltageState = voltage;
     _state.coilpwState = coilpw;
 }
-
-//JsonObject jsonObject = jsonDocument.as<JsonObject>();
-//powerStateService->update(jsonObject, PowerState::update, "timer");
-
-
-/*
-PowerState::PowerState(AsyncWebServer *server, SecurityManager *securityManager)
-{
-    server->on(POWER_SETTINGS_ENDPOINT_PATH,HTTP_GET,
-               securityManager->wrapRequest(std::bind(&PowerState::powerState, this, std::placeholders::_1),AuthenticationPredicates::IS_AUTHENTICATED));
-}
-
-void PowerState::powerState(AsyncWebServerRequest *request)
-{
-    AsyncJsonResponse *response = new AsyncJsonResponse(false, MAX_ESP_STATUS_SIZE);
-    JsonObject root = response->getRoot();
-    root["voltage"] = voltage;
-    root["coilpw"] = coilpw;
-    response->setLength();
-    request->send(response);
-}*/

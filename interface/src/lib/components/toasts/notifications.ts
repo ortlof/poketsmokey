@@ -1,4 +1,5 @@
 import { writable, derived } from 'svelte/store';
+import type { Style } from 'svelte/types/compiler/interfaces';
 
 type State = {
 	id: string;
