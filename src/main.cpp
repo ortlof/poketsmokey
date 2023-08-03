@@ -31,9 +31,15 @@ float coilpowerset = 0;
 float airpowerset = 0;
 bool lowpower = true;
 float burntimeset = 0; 
+float burntimeinsek = 0;
+float intervaltimeinsek = 0;
 float intervalset = 0;
 bool timerstate = false;
 float maxburntimeset = 6000;
+unsigned long burnStartMillis = 0;
+unsigned long intervalStartMillis = 0;
+bool burnInProgress = false;
+bool intervalInProgress = false;
 
 
 unsigned long startMillis;  //some global variables available anywhere in the program
@@ -44,14 +50,14 @@ const byte ledPin = 13;    //using the built in LED
 const int coiltype = 0;
 
 // setting PWM properties
-const int freq = 12000;
+const int freq = 15000;
 const int airchannel = 0;
 const int coilchannel = 1;
 const int resolution = 8;
 
 const int maxAmpere = 3; // Maximale Amperewert, an dem die Reduzierung der PWM startet
 const int minPwm = 30; // Minimum PWM Ausgabe
-const int maxPwm = 70; // Maximum PWM Ausgabe
+const int maxPwm = 160; // Maximum PWM Ausgabe
 
 
 AsyncWebServer server(80);
@@ -74,20 +80,20 @@ float getAnalogAverage(int pinNumber, int samples)
 
 void battery(){
   voltage = getAnalogAverage(1, 20);
-  Serial.print(" ");
-  Serial.print(voltage);
+  //Serial.print(" ");
+  //Serial.print(voltage);
   //voltage = analogRead(1);
   voltage = voltage * 10/4096;
-  if(voltage < 6.5){
+  if(voltage < 3.5){
     lowpower = true;
-    Serial.print(" ");
+   /* Serial.print(" ");
     Serial.print(voltage);
-    Serial.println("Low Power");
+    Serial.println("Low Power");*/
   } else {
     lowpower = false;
-    Serial.print(" ");
+    /*Serial.print(" ");
     Serial.print(voltage);
-    Serial.println("High Power");
+    Serial.println("High Power");*/
   }
   
   //Serial.print("Voltage= ");
@@ -141,7 +147,7 @@ void coilburn(){
 
 void airpower(){
     if(airState == true){
-      int desirePwm = map(airpowerset, 0, 100, 200, 255);
+      int desirePwm = map(airpowerset, 0, 100, 110, 255);
       ledcWrite(airchannel, desirePwm);
     } else {
       ledcWrite(airchannel, 0);
@@ -190,43 +196,33 @@ void loop() {
     }, "Bat/Coil-Timer");
   }
 
-  if (timerstate == true) {
-    static unsigned long burnStartMillis = 0;
-    static unsigned long intervalStartMillis = 0;
-    static bool burnInProgress = false;
-    static bool intervalInProgress = false;
-    burntimeset = burntimeset * 1000;
-    intervalset = intervalset * 1000;
+  if (timerstate == true) { //Fehler hier.
+    burntimeinsek = burntimeset * 1000; 
+    intervaltimeinsek = intervalset * 1000;
     
     if (burnInProgress == false && intervalInProgress == false) {
       burnStartMillis = currentMillis;
       burnInProgress = true;
       airState = true;
       coilState = true;
+      Serial.println("Timer On");
     }
     
-    if (burnInProgress == true && currentMillis - burnStartMillis >= burntimeset) {
+    if (burnInProgress == true && currentMillis - burnStartMillis >= burntimeinsek) {
       burnInProgress = false;
+      intervalInProgress = true;
       intervalStartMillis = currentMillis;
       airState = false;
       coilState = false;
+      Serial.println("Timer Off");
     }
     
-    if (intervalInProgress == false && burnInProgress == false && currentMillis - intervalStartMillis >= intervalset) {
-      intervalInProgress = true;
-      burnStartMillis = currentMillis;
-      airState = true;
-      coilState = true;
-    }
-    
-    if (intervalInProgress == true && currentMillis - burnStartMillis >= burntimeset) {
+    if (intervalInProgress == true && currentMillis - intervalStartMillis >= intervaltimeinsek) { // only divide by 1000 once
       intervalInProgress = false;
-      burnInProgress = false;
-      airState = false;
-      coilState = false;
+      Serial.println("Wait ");
     }
-  }
-
+  } 
+  
   if (lowpower == false) {
     coilpower();
     coilburn();
