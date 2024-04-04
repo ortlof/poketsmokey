@@ -53,11 +53,12 @@ const int coiltype = 0;
 const int freq = 15000;
 const int airchannel = 0;
 const int coilchannel = 1;
+const int powerchannel = 3;
 const int resolution = 8;
 
-const int maxAmpere = 3; // Maximale Amperewert, an dem die Reduzierung der PWM startet
+const int maxAmpere = 6; // Maximale Amperewert, an dem die Reduzierung der PWM startet
 const int minPwm = 30; // Minimum PWM Ausgabe
-const int maxPwm = 160; // Maximum PWM Ausgabe
+const int maxPwm = 255; // Maximum PWM Ausgabe
 
 
 AsyncWebServer server(80);
@@ -159,12 +160,16 @@ void setup()
     
     pinMode(coilpin, OUTPUT);
     pinMode(airpin, OUTPUT);
+    pinMode(21, OUTPUT);
     pinMode(1, INPUT);
     battery();
     ledcSetup(coilchannel, freq, resolution);
     ledcSetup(airchannel, freq, resolution);
+    ledcSetup(powerchannel, freq, resolution);
     ledcAttachPin(coilpin, coilchannel);  
     ledcAttachPin(airpin, airchannel);
+    ledcAttachPin(21, powerchannel);
+    ledcWrite(powerchannel, 255);
 
     coilpower();
 

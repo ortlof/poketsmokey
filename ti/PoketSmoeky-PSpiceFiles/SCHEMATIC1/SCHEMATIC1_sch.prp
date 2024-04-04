@@ -1,0 +1,22 @@
+("FILE_TYPE"	"PMAP File"
+    ("devices"
+        ("TPS7A4700")
+    )
+    ("instances"
+        ("U1"
+            ("device_name"	"TPS7A4700")
+            ("pspice_path"	"X_U1")
+            ("level"	"0")
+            ("model_params"
+                ("productURL"
+                    ("value"	"http://www.ti.com/document-viewer/TPS7A47/datasheet/")
+                    ("pspice_param"	"productURL")
+                )
+                ("Testbenches"
+                    ("value"	"[{testbenchurl:https://software-dl.ti.com/pspice/esd/models/TPS7A4700_TRANS_V1.0.zip,testbenchopj:TPS7A4700_TRANS.opj,testbenchdisplayname:TPS7A4700 Transient Model}]")
+                    ("pspice_param"	"Testbenches")
+                )
+            )
+        )
+    )
+)
