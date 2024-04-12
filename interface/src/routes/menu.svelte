@@ -4,18 +4,26 @@
 	import Discord from '~icons/tabler/brand-discord';
 	import Users from '~icons/tabler/users';
 	import Settings from '~icons/tabler/settings';
+	import Health from '~icons/tabler/stethoscope';
+	import Update from '~icons/tabler/refresh-alert';
 	import WiFi from '~icons/tabler/wifi';
+	import Router from '~icons/tabler/router';
+	import AP from '~icons/tabler/access-point';
 	import Remote from '~icons/tabler/network';
 	import Control from '~icons/tabler/adjustments';
+	import Safety from '~icons/tabler/lock-square-rounded';
+	import Config from '~icons/tabler/settings-automation';
 	import Avatar from '~icons/tabler/user-circle';
 	import Logout from '~icons/tabler/logout';
 	import Copyright from '~icons/tabler/copyright';
 	import MQTT from '~icons/tabler/topology-star-3';
 	import NTP from '~icons/tabler/clock-check';
+	import Metrics from '~icons/tabler/report-analytics';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { user } from '$lib/stores/user';
 	import { createEventDispatcher } from 'svelte';
+
 
 	const appName = 'PoketSmokey';
 
@@ -50,35 +58,78 @@
 			active: false
 		},
 		{
-			title: 'Connections',
-			icon: Remote,
-			feature: $page.data.features.mqtt || $page.data.features.ntp,
-			active: true,
+			title: 'Smoke',
+			icon: Safety,
+			href: '/',
+			feature: true,
+			active: false
+		},
+		{
+			title: 'WiFi',
+			icon: WiFi,
+			feature: true,
 			submenu: [
 				{
-					title: 'MQTT',
-					icon: MQTT,
-					href: '/connections/mqtt',
-					feature: $page.data.features.mqtt,
+					title: 'WiFi Station',
+					icon: Router,
+					href: '/wifi/sta',
+					feature: true,
 					active: false
 				},
 				{
-					title: 'NTP',
-					icon: NTP,
-					href: '/connections/ntp',
-					feature: $page.data.features.ntp,
+					title: 'Access Point',
+					icon: AP,
+					href: '/wifi/ap',
+					feature: true,
 					active: false
 				}
 			]
 		},
-		{ title: 'Wi-Fi', icon: WiFi, href: '/wifi', feature: true, active: false },
-		{ title: 'System', icon: Settings, href: '/system', feature: true, active: false },
 		{
 			title: 'Users',
 			icon: Users,
 			href: '/user',
 			feature: $page.data.features.security && $user.admin,
 			active: false
+		},
+		{
+			title: 'System',
+			icon: Settings,
+			feature: true,
+			submenu: [
+				{
+					title: 'Configuration',
+					icon: Config,
+					href: '/system/config',
+					feature: !$page.data.features.security || $user.admin,
+					active: false
+				},
+				{
+					title: 'System Status',
+					icon: Health,
+					href: '/system/status',
+					feature: true,
+					active: false
+				},
+				{
+					title: 'System Metrics',
+					icon: Metrics,
+					href: '/system/metrics',
+					feature: $page.data.features.analytics,
+					active: false
+				},
+				{
+					title: 'Firmware Update',
+					icon: Update,
+					href: '/system/update',
+					feature:
+						($page.data.features.ota ||
+							$page.data.features.upload_firmware ||
+							$page.data.features.download_firmware) &&
+						(!$page.data.features.security || $user.admin),
+					active: false
+				}
+			]
 		}
 	];
 

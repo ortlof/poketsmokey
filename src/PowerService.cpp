@@ -16,14 +16,14 @@
 extern float voltage;
 extern float coilpw;
 
-PowerStateService::PowerStateService(AsyncWebServer *server,
+PowerStateService::PowerStateService(PsychicHttpServer *server,
                                  SecurityManager *securityManager) : _httpEndpoint(PowerState::read,
                                                                                    PowerState::update,
                                                                                    this,
                                                                                    server,
                                                                                    POWER_SETTINGS_ENDPOINT_PATH,
                                                                                    securityManager,AuthenticationPredicates::IS_AUTHENTICATED),
-                                                                                   _webSocket(PowerState::read,
+                                                                    _webSocketServer(PowerState::read,
                                                                                    PowerState::update,
                                                                                    this,
                                                                                    server,
@@ -38,6 +38,10 @@ PowerStateService::PowerStateService(AsyncWebServer *server,
 
 void PowerStateService::begin()
 {
+
+    _httpEndpoint.begin();
+    _webSocketServer.begin();
+    
     _state.voltageState = voltage;
     _state.coilpwState = coilpw;
     onConfigUpdated();

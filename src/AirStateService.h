@@ -15,7 +15,8 @@
  *   the terms of the LGPL v3 license. See the LICENSE file for details.
  **/
 #include <HttpEndpoint.h>
-#include <WebSocketTxRx.h>
+#include <WebSocketServer.h>
+#include <PsychicHttp.h>
 
 #define DEFAULT_LED_STATE false
 #define OFF_STATE "OFF"
@@ -85,13 +86,13 @@ public:
 class AirStateService : public StatefulService<AirState>
 {
 public:
-    AirStateService(AsyncWebServer *server,
+    AirStateService(PsychicHttpServer *server,
                       SecurityManager *securityManager);
     void begin();
 
 private:
     HttpEndpoint<AirState> _httpEndpoint;
-    WebSocketTxRx<AirState> _webSocket;
+    WebSocketServer<AirState> _webSocketServer;
 
     void registerConfig();
     void onConfigUpdated();

@@ -71,8 +71,7 @@
 			console.error('Error:', error);
 		}
 	}
-
-
+	
 	type powerState = {
 		voltage: number;
 		coilpw: number;
@@ -83,18 +82,21 @@
 	const ws2_token = $page.data.features.security ? '?access_token=' + $user.bearer_token : '';
 
 	const PowerStateSocket = new WebSocket('ws://' + $page.url.host + '/ws/powerState' + ws2_token);
-	PowerStateSocket.onopen = (event) => {
+	PowerStateSocket.onopen = function (event) {
 		PowerStateSocket.send('Hello');
 	};
 
-	PowerStateSocket.onmessage = (event) => {
-		const message = JSON.parse(event.data);
-		if (message.type == 'payload') {
-			powerState.voltage = message.payload.voltage;
-			powerState.coilpw = message.payload.coilpw;
-		}
-	};
+	PowerStateSocket.onmessage = function (event) {
+    var data = JSON.parse(event.data);
 
+    if (data.voltage !== undefined && data.coilpw !== undefined) {
+      powerState.voltage = data.voltage;
+      powerState.coilpw = data.coilpw;
+    } else {
+      console.error('Invalid data format received:', data);
+    }
+  };
+	
 	onDestroy(() => PowerStateSocket.close());
 
 	
@@ -107,7 +109,7 @@
 	  CoilOn = true;
 	  fireOn = true;
 	  postAirstate();
-    }, 1000);  // Every 1 second
+    }, 500);  // Every 1 second
   }
 
   function handleMouseUp() {

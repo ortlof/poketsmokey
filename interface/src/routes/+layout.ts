@@ -5,10 +5,10 @@ export const prerender = false;
 export const ssr = false;
 
 export const load = (async () => {
-	const result = await fetch('/rest/features');
-	const item = await result.json();
+	//const result = await fetch('/rest/features');
+	//const item = await result.json();
 	return {
-		features: item,
+		features: '',
 		title: 'PoketSmokey'
 	};
 }) satisfies LayoutLoad;

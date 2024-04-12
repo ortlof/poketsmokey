@@ -29,14 +29,14 @@ bool airOn = false;
 
 
 
-AirStateService::AirStateService(AsyncWebServer *server,
+AirStateService::AirStateService(PsychicHttpServer *server,
                                  SecurityManager *securityManager) : _httpEndpoint(AirState::read,
                                                                                    AirState::update,
                                                                                    this,
                                                                                    server,
                                                                                    AIR_SETTINGS_ENDPOINT_PATH,
                                                                                    securityManager,AuthenticationPredicates::IS_AUTHENTICATED),
-                                                                                   _webSocket(AirState::read,
+                                                                     _webSocketServer(AirState::read,
                                                                                    AirState::update,
                                                                                    this,
                                                                                    server,
@@ -51,6 +51,9 @@ AirStateService::AirStateService(AsyncWebServer *server,
 
 void AirStateService::begin()
 {
+    _httpEndpoint.begin();
+    _webSocketServer.begin();
+
     _state.airOn = DEFAULT_LED_STATE;
     _state.coilOn = DEFAULT_LED_STATE;
     _state.intervalOn = DEFAULT_LED_STATE;

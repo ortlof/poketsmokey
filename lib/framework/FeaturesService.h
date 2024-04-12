@@ -18,22 +18,31 @@
 #include <Features.h>
 
 #include <WiFi.h>
-#include <AsyncTCP.h>
-
 #include <ArduinoJson.h>
-#include <AsyncJson.h>
-#include <ESPAsyncWebServer.h>
+#include <PsychicHttp.h>
+#include <vector>
 
 #define MAX_FEATURES_SIZE 256
 #define FEATURES_SERVICE_PATH "/rest/features"
 
+typedef struct
+{
+    String feature;
+    bool enabled;
+} UserFeature;
+
 class FeaturesService
 {
 public:
-    FeaturesService(AsyncWebServer *server);
+    FeaturesService(PsychicHttpServer *server);
+
+    void begin();
+
+    void addFeature(String feature, bool enabled);
 
 private:
-    void features(AsyncWebServerRequest *request);
+    PsychicHttpServer *_server;
+    std::vector<UserFeature> userFeatures;
 };
 
 #endif

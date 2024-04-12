@@ -19,6 +19,7 @@
 #include <HttpEndpoint.h>
 #include <FSPersistence.h>
 #include <JsonUtils.h>
+#include <WiFi.h>
 
 #include <DNSServer.h>
 #include <IPAddress.h>
@@ -121,7 +122,7 @@ public:
         case AP_MODE_NEVER:
             break;
         default:
-            newSettings.provisionMode = AP_MODE_ALWAYS;
+            newSettings.provisionMode = AP_MODE_DISCONNECTED;
         }
         newSettings.ssid = root["ssid"] | SettingValue::format(FACTORY_AP_SSID);
         newSettings.password = root["password"] | FACTORY_AP_PASSWORD;
@@ -145,13 +146,16 @@ public:
 class APSettingsService : public StatefulService<APSettings>
 {
 public:
-    APSettingsService(AsyncWebServer *server, FS *fs, SecurityManager *securityManager);
+    APSettingsService(PsychicHttpServer *server, FS *fs, SecurityManager *securityManager);
 
     void begin();
     void loop();
     APNetworkStatus getAPNetworkStatus();
+    void recoveryMode();
 
 private:
+    PsychicHttpServer *_server;
+    SecurityManager *_securityManager;
     HttpEndpoint<APSettings> _httpEndpoint;
     FSPersistence<APSettings> _fsPersistence;
 
@@ -161,6 +165,7 @@ private:
     // for the mangement delay loop
     volatile unsigned long _lastManaged;
     volatile boolean _reconfigureAp;
+    volatile boolean _recoveryMode = false;
 
     void reconfigureAP();
     void manageAP();

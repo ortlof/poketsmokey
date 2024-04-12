@@ -56,13 +56,15 @@ const int coilchannel = 1;
 const int powerchannel = 3;
 const int resolution = 8;
 
-const int maxAmpere = 6; // Maximale Amperewert, an dem die Reduzierung der PWM startet
+const int maxAmpere = 5; // Maximale Amperewert, an dem die Reduzierung der PWM startet
 const int minPwm = 30; // Minimum PWM Ausgabe
 const int maxPwm = 255; // Maximum PWM Ausgabe
 
 
-AsyncWebServer server(80);
-ESP32SvelteKit esp32sveltekit(&server);
+PsychicHttpServer server;
+
+ESP32SvelteKit esp32sveltekit(&server, 120);
+
 AirStateService airStateService = AirStateService(&server,esp32sveltekit.getSecurityManager());
 PowerStateService powerStateService = PowerStateService(&server,esp32sveltekit.getSecurityManager());
 
@@ -139,6 +141,9 @@ void coilpower() {
 
 void coilburn(){
   if (coilState == true){
+    /*if (coilpw > maxAmpere) {
+        int reducedPwm = map(coilpw, maxAmpere, maxPwm, minPwm, maxPwm);
+    }*/
     int desiredPwm = map(coilpowerset, 0, 100, minPwm, maxPwm); // Mappe den gewünschten Prozentwert auf einen PWM-Wert
     ledcWrite(coilchannel, desiredPwm);
     } else {
@@ -149,7 +154,7 @@ void coilburn(){
 void airpower(){
     if(airState == true){
       int desirePwm = map(airpowerset, 0, 100, 110, 255);
-      ledcWrite(airchannel, desirePwm);
+        ledcWrite(airchannel, desirePwm);  
     } else {
       ledcWrite(airchannel, 0);
     };
@@ -180,15 +185,11 @@ void setup()
     // load the initial light settings
     airStateService.begin();
     powerStateService.begin();
-
-    // start the server
-    server.begin();
 }
 
 
 void loop() {
-  // run the framework's loop function
-  esp32sveltekit.loop();
+
   currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)
   if (currentMillis - startMillis >= period)  //test whether the period has elapsed
   {

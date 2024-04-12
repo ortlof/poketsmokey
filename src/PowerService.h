@@ -15,7 +15,9 @@
  *   the terms of the LGPL v3 license. See the LICENSE file for details.
  **/
 #include <HttpEndpoint.h>
-#include <WebSocketTxRx.h>
+#include <WebSocketServer.h>
+#include <PsychicHttp.h>
+#include <ArduinoJson.h>
 
 #define MAX_ESP_STATUS_SIZE 1024
 #define POWER_SETTINGS_ENDPOINT_PATH "/rest/powerState"
@@ -49,13 +51,13 @@ public:
 class PowerStateService : public StatefulService<PowerState>
 {
 public:
-    PowerStateService(AsyncWebServer *server,
+    PowerStateService(PsychicHttpServer *server,
                       SecurityManager *securityManager);
     void begin();
 
 private:
     HttpEndpoint<PowerState> _httpEndpoint;
-    WebSocketTxRx<PowerState> _webSocket;
+    WebSocketServer<PowerState> _webSocketServer;
 
     void registerConfig();
     void onConfigUpdated();
